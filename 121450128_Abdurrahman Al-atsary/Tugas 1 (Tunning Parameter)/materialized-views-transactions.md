@@ -1,9 +1,5 @@
-Nama : Abdurrahman Al-atsary (RC)
-NIM : 121450128
 
----
-
-# Task 1 : Materialized views & Transactions
+# **Task 1 : Materialized views & Transactions**
 
 > Tools :
 >
