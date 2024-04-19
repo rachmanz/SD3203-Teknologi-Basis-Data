@@ -1,4 +1,299 @@
 ---
+Task: Tugas 2 (Menuliskan Artikel)
 Author: Abdurrahman Al-atsary
 Title: Storing Images in Python
 ---
+
+# 3 Cara untuk Menyimpan dan Mengakses Gambar yang Banyak didalam Python
+
+## Overview
+
+Pernahkan kamu berfikir bagaimana cara menyimpan dan mengakses gambar didalam python? Sebagai seorang ahli data sains yang nantinya akan bergelut di bidang data dalam berbagai macam format. Kita harus mengetahui cara menyimpan dan mengakses gambar didalam python. Dan megetahui teknik-teknik dalam pengolahannya dan termasuk didalam penyimpanan dari file tersebut dalam bentuk format gambar _(.png, .jpg, .webp dsb)_ dan coba bayangkan AI yang dipakai di handphone kalian dari foto, camera dsb itu merupakan contoh dari pengolahan data-data dari berbagai macam gambar dan bentuk juga ukuran yang sangat sangat besar sehingga AI yang dihasilkan cukup presisi didalam oprasi yang ada didalam mesin yang bisa dirasakan oleh user.
+
+## About Learn
+
+- Menyimpan gambar pada disk sebagai file (.png) atau gambar non-background.
+- Menyimpan gambar dalam database ang dipetakan dalam LMDB (**Lightning Memory-Mapped Database**) dengan bantuan dari Library Python.
+- Menyimpan gambar dalam format data hierarkis **(HDF5)**
+
+## About Explore and Digging
+
+- Pertimbangan Metode penyimpanan alternatif yang layak dari metode ini.
+- Perbedaan Kinerja saat membaca dan menulis gambar tunggal.
+- Perbedaan kinerja ketika membaca dan menulis banyak gambar.
+- Perbandingan ketiga metode dalam hal penggunaan disk.
+
+> _**Notes : Gambar pada dasarnya adalah sebuah array dan angka multi-dimensi dan bermemori relatif dari banyaknya representasi pixel yang ditampilkan dan semakin banyak pixel yang direpresentasikan maka semakin besar ukuran dari gambar dan berlaku sebaliknya.**_
+
+## Eksperimen yang Dilakukan
+
+Gambar yang digunakan adalah dengan menggunakan Canadian Institute for Advance Research, lebih dikenal sebagai CIFAR-10, yang terdiri dari 60.000 gambar warna dengan ukuran yang sama 32x32 piksel dan memiliki kelas objek yang berbeda-beda contohnya : anjing, kucing, pesawat terbang dll. Secara relatif, CIFAR bukanlah dataset yang sangat besar namun dapat digunakan untuk pendeteksian multi-class objek yang cukup mudah didapat dan diproses. CIFAR hanya membutuhkan ruangan penyimpanan hanya 163 MB didalam ruang disk. Data CIFAR mempunyai kelebihan didalam serialisasi dengan berbagai objek didalam python tanpa menggunakan code yang extra didalam transformasi gambar karna sudah bentuk dalam batch-batch.
+
+## Tahapan-tahapan didalam Eksperimen
+
+tambahin gambar
+
+### Setup Disk untuk Penyimpanan Gambar
+
+Dalam pengujian ini pertama-tama dilakukan persiapan untuk penyimpaanan gambar didalam disk
+
+> Hal yang perlu dilakukan adalah menyiapkan lingkungan untuk metode yang biasa digunakan didalam menyimpan dan mengakses gambar dari disk. Dengan asumsi user sudah mempunyai setup python 3.x.x didalam device yang digunakan.
+
+- Setup dengan menggunakan library `Pillow` didalam python dengan mengetikan `pip install Pillow`.
+
+- Alternatif jika menggunakakn anaconda dengan mengetikan:
+  `$ conda install -c conda-forge pillow`
+
+tambahin gambar
+
+### Installasi LMDB
+
+LMDB atau yang disebut dengan "Lightning Database" dibuat untuk Database karna rcepat dan menggukaan file yang dipetakan didalam memori. Penyimpanan dalam bentuk nilai kunci dan bukan database relasional.
+
+LMDB adalah database key-value yang tertanam yang menggunakan struktur pohon B+ untuk menyimpan datanya. Pohon B+ dioptimalkan untuk penyimpanan memori dan akses data yang cepat. Kunci pohon B+ diatur agar sesuai dengan ukuran halaman sistem operasi, sehingga memaksimalkan efisiensi saat mengakses data. Kinerja LMDB sangat bergantung pada efisiensi sistem file yang mendasarinya.
+
+Alasan efisien dari LMDB adalah karna LMDB dipetakan didalam memori. Artinya, **Proses ini mengembalikan penunjuk (Pointer) langsung ke alamat memori dari nilai kunci dan nilai (key-value)**
+
+Untuk menambahkan library ini dapat menggunakan :
+
+`pip install lmbd`
+
+Atau dengan menggunakan anaconda dengan mengetikan :
+
+`conda install -c conda-forge python-lmdb`
+
+tambahin gambar
+
+### Installasi HDF5
+
+HDF5 adalah singkatan dari Hierarchical Data Format, format file yang disebut dengan HDF4 atau HDF5, menariknya format ini berasal dari National Center for Supercomputing Applications sebagai format data ilmiyah yang portable dan ringkas dalam NASA di data proyeksi BUMI mereka.
+
+File HDF terdiri dari 2 jenis objek :
+
+1. Kumpulan data
+2. Grup
+
+Kumpulan data adalah array multidimensi, dan grup terdiri dari kumpulan data atau grup lain. Array multidimensi dengan ukuran dan tipe apa pun dapat disimpan sebagai kumpulan data, namun dimensi dan tipenya harus seragam dalam kumpulan data. Setiap dataset harus berisi array berdimensi N yang homogen. Meskipun demikian, karena grup dan kumpulan data mungkin disarangkan.
+
+Cara menginstall HDF5 didalam python **(pip)** :
+
+`pip install h5py`
+
+Jika didalam **anaconda** :
+`conda install -c conda-forge h5py`
+
+## Menyimpan Satu Gambar
+
+Sekarang setelah Anda memiliki gambaran umum tentang metode ini, mari selami dan lihat perbandingan kuantitatif dari tugas-tugas dasar yang penting bagi kami: **berapa lama waktu yang dibutuhkan untuk membaca dan menulis file, dan berapa banyak memori disk yang akan digunakan.** Ini juga akan berfungsi sebagai pengenalan dasar tentang cara kerja metode, dengan contoh kode cara menggunakannya.
+
+Saat saya mengacu pada "file", yang saya maksud biasanya banyak. Namun, penting untuk membedakannya karena beberapa metode mungkin dioptimalkan untuk operasi dan jumlah file yang berbeda.
+
+Untuk keperluan eksperimen, **kita dapat membandingkan kinerja antara berbagai jumlah file, dengan faktor 10 dari satu gambar hingga 100.000 gambar.** Karena lima kumpulan CIFAR-10 kami berjumlah 50.000 gambar, kami dapat menggunakan setiap gambar dua kali untuk mendapatkan 100.000 gambar.
+
+Untuk mempersiapkan percobaan, Anda perlu membuat folder untuk setiap metode, yang akan berisi semua file atau gambar database, dan menyimpan jalur ke direktori tersebut dalam variabel:
+
+`Path`tidak secara otomatis membuat folder untuk Anda kecuali Anda secara khusus memintanya untuk:
+
+Sekarang Anda dapat melanjutkan menjalankan eksperimen sebenarnya, dengan contoh kode tentang cara melakukan tugas dasar dengan tiga metode berbeda. Kita dapat menggunakan `timeit`modul, yang disertakan dalam pustaka standar Python, untuk membantu mengatur waktu eksperimen.
+
+Meskipun tujuan utama artikel ini bukan untuk mempelajari API dari berbagai paket Python, akan sangat membantu jika kita memahami bagaimana paket tersebut dapat diimplementasikan. Kami akan membahas prinsip umum beserta semua kode yang digunakan untuk melakukan eksperimen penyimpanan.
+
+### Menyimpan ke Disk
+
+Masukan kami untuk percobaan ini adalah satu gambar `image`, yang saat ini ada di memori sebagai array NumPy. Anda ingin menyimpannya terlebih dahulu ke disk sebagai `.png`image, dan menamainya menggunakan image ID yang unik `image_id`. Ini dapat dilakukan dengan menggunakan `Pillow`paket yang Anda instal sebelumnya:
+
+Ini akan menyimpan gambar. Dalam semua aplikasi realistis, Anda juga peduli dengan meta data yang dilampirkan pada gambar, yang dalam contoh kumpulan data kami adalah label gambar. Saat Anda menyimpan gambar ke disk, ada beberapa opsi untuk menyimpan data meta.
+
+Salah satu solusinya adalah dengan mengkodekan label ke dalam nama gambar. Keuntungannya adalah tidak memerlukan file tambahan apa pun.
+
+Namun, ini juga memiliki kelemahan besar karena memaksa Anda menangani semua file setiap kali Anda melakukan sesuatu dengan label. Menyimpan label dalam file terpisah memungkinkan Anda bermain-main dengan label saja, tanpa harus memuat gambar. Di atas, saya telah menyimpan label dalam `.csv`file terpisah untuk percobaan ini.
+
+Sekarang mari kita lanjutkan melakukan tugas yang sama persis dengan LMDB.
+
+### Menyimpan ke LMDB
+
+Pertama, LMDB adalah sistem penyimpanan nilai kunci di mana setiap entri disimpan sebagai array byte, jadi dalam kasus kita, kunci akan menjadi pengidentifikasi unik untuk setiap gambar, dan nilainya akan menjadi gambar itu sendiri. **Baik kunci maupun nilai diharapkan berupa strings** , jadi penggunaan umum adalah membuat serial nilai sebagai string, lalu membatalkan serialisasinya saat membacanya kembali.
+
+Anda dapat menggunakannya `pickle`untuk serialisasi. Objek Python apa pun dapat dibuat serial, jadi sebaiknya Anda juga menyertakan data meta gambar ke dalam database. Ini menyelamatkan Anda dari kesulitan melampirkan meta data kembali ke data gambar saat kami memuat kumpulan data dari disk.
+
+Anda dapat membuat [kelas Python](https://realpython.com/python-classes/) dasar untuk gambar dan meta datanya:
+
+Kedua, karena LMDB dipetakan dengan memori, database baru perlu mengetahui berapa banyak memori yang diperkirakan akan digunakan. Hal ini relatif mudah dalam kasus kami, namun dapat menjadi masalah besar dalam kasus lain, yang akan Anda lihat lebih mendalam di bagian selanjutnya. LMDB menyebut variabel ini sebagai `map_size`.
+
+Terakhir, operasi baca dan tulis dengan LMDB dilakukan di `transactions`. Anda dapat menganggapnya mirip dengan database tradisional, yang terdiri dari sekelompok operasi pada database. Ini mungkin terlihat jauh lebih rumit daripada versi disk, tapi tunggu dulu dan teruslah membaca!
+
+Dengan mengingat tiga poin tersebut, mari kita lihat kode untuk menyimpan satu gambar ke LMDB:
+
+Anda sekarang siap menyimpan gambar ke LMDB. Terakhir, mari kita lihat metode terakhir, HDF5.
+
+### Menyimpan Dengan HDF5
+
+Ingatlah bahwa file HDF5 dapat berisi lebih dari satu kumpulan data. Dalam kasus yang agak sepele ini, Anda dapat membuat dua himpunan data, satu untuk gambar, dan satu lagi untuk meta datanya:
+
+`h5py.h5t.STD_U8BE`menentukan jenis data yang akan disimpan dalam kumpulan data, yang dalam hal ini adalah bilangan bulat 8-bit yang tidak ditandatangani. Anda dapat melihat [daftar lengkap tipe data HDF yang telah ditentukan sebelumnya di sini](http://api.h5py.org/h5t.html) .
+
+Sekarang kita telah meninjau tiga metode menyimpan satu gambar, mari kita lanjutkan ke langkah berikutnya.
+
+### Eksperimen untuk Menyimpan Satu Gambar
+
+Sekarang Anda dapat memasukkan ketiga fungsi untuk menyimpan satu gambar ke dalam [kamus](https://realpython.com/python-dicts/) , yang dapat dipanggil nanti selama eksperimen pengaturan waktu:
+
+Akhirnya, semuanya siap untuk melakukan percobaan waktunya. Mari kita coba menyimpan gambar pertama dari CIFAR dan label terkait, lalu menyimpannya dengan tiga cara berbeda:
+
+Ingatlah bahwa kami tertarik pada waktu proses, yang ditampilkan di sini dalam hitungan detik, dan juga penggunaan memori:
+
+| metode | Simpan Gambar Tunggal + Meta | Penyimpanan |
+| ------ | ---------------------------- | ----------- |
+| Disk   | 1,915 mdtk                   | 8K          |
+| LMDB   | 1,203 ms                     | 32 K        |
+| HDF5   | 8,243 ms                     | 8K          |
+
+Ada dua kesimpulan di sini:
+
+1.  Semua metode ini cukup cepat.
+2.  Dalam hal penggunaan disk, LMDB menggunakan lebih banyak.
+
+Jelasnya, meskipun LMDB memiliki sedikit keunggulan kinerja, kami belum meyakinkan siapa pun mengapa tidak menyimpan gambar saja di disk. Bagaimanapun, ini adalah format yang dapat dibaca manusia, dan Anda dapat membuka dan melihatnya dari browser sistem file apa pun! Nah, sekarang saatnya melihat lebih banyak gambar…
+
+## Menyimpan Banyak Gambar
+
+Anda telah melihat kode untuk menggunakan berbagai metode penyimpanan untuk menyimpan satu gambar, jadi sekarang kita perlu menyesuaikan kode untuk menyimpan banyak gambar dan kemudian menjalankan eksperimen berwaktu.
+
+### Menyesuaikan Kode untuk Banyak Gambar
+
+Menyimpan _banyak_ gambar sebagai `.png`file semudah menelepon `store_single_method()`beberapa kali. Namun hal ini tidak berlaku untuk LMDB atau HDF5, karena Anda tidak ingin file database berbeda untuk setiap gambar. Sebaliknya, Anda ingin memasukkan semua gambar ke dalam satu atau lebih file.
+
+Anda perlu sedikit mengubah kode dan membuat tiga fungsi baru yang menerima banyak gambar, `store_many_disk()`, `store_many_lmdb()`, dan `store_many_hdf5`:
+
+Agar Anda dapat menyimpan lebih dari satu file ke disk, metode file gambar diubah untuk mengulang setiap gambar dalam daftar. Untuk LMDB, loop juga diperlukan karena kita membuat `CIFAR_Image`objek untuk setiap gambar dan meta datanya.
+
+Penyesuaian terkecil adalah dengan metode HDF5. Faktanya, hampir tidak ada penyesuaian sama sekali! File HFD5 tidak memiliki batasan ukuran file selain batasan eksternal atau ukuran kumpulan data, sehingga semua gambar dimasukkan ke dalam satu kumpulan data, seperti sebelumnya.
+
+Selanjutnya, Anda perlu menyiapkan kumpulan data untuk eksperimen dengan memperbesar ukurannya.
+
+### Mempersiapkan Kumpulan Data
+
+Sebelum menjalankan eksperimen lagi, pertama-tama mari gandakan ukuran kumpulan data kita sehingga kita dapat menguji hingga 100.000 gambar:
+
+Sekarang gambar sudah cukup, saatnya bereksperimen.
+
+### Eksperimen untuk Menyimpan Banyak Gambar
+
+Seperti yang Anda lakukan saat membaca banyak gambar, Anda dapat membuat kamus yang menangani semua fungsi `store_many_`dan menjalankan eksperimen:
+
+Jika Anda mengikuti dan menjalankan kodenya sendiri, Anda harus duduk santai sejenak dan menunggu hingga 111.110 gambar disimpan masing-masing tiga kali ke disk Anda, dalam tiga format berbeda. Anda juga harus mengucapkan selamat tinggal pada ruang disk sekitar 2 GB.
+
+Sekarang untuk momen kebenaran! **Berapa lama waktu yang dibutuhkan untuk semua penyimpanan itu?** Sebuah gambar bernilai ribuan kata:
+
+[![menyimpan banyak](https://files.realpython.com/media/store_many.273573157770.png)](https://files.realpython.com/media/store_many.273573157770.png)
+
+[![simpan-banyak-log](https://files.realpython.com/media/store_many_log.29e8ae980ab6.png)](https://files.realpython.com/media/store_many_log.29e8ae980ab6.png)
+
+Grafik pertama menunjukkan waktu penyimpanan normal dan tidak disesuaikan, menyoroti perbedaan drastis antara penyimpanan ke `.png`file dan LMDB atau HDF5.
+
+Grafik kedua menunjukkan `log`perubahan waktu, menyoroti bahwa HDF5 dimulai lebih lambat dibandingkan LMDB tetapi, dengan jumlah gambar yang lebih besar, hasilnya sedikit lebih cepat.
+
+Meskipun hasil pastinya mungkin berbeda-beda tergantung mesin Anda, **inilah alasan mengapa LMDB dan HDF5 layak untuk dipertimbangkan.** Berikut kode yang menghasilkan grafik di atas:
+
+Sekarang mari kita lanjutkan membaca gambarnya kembali.
+
+## Membaca Satu Gambar
+
+Pertama, mari kita pertimbangkan kasus untuk membaca satu gambar kembali ke dalam array untuk masing-masing dari tiga metode.
+
+### Membaca Dari Disk
+
+Dari ketiga metode tersebut, LMDB memerlukan kerja keras paling banyak saat membaca kembali file gambar dari memori, karena langkah serialisasi. Mari kita telusuri fungsi-fungsi yang membaca satu gambar untuk masing-masing dari tiga format penyimpanan.
+
+Pertama, baca satu gambar dan meta-nya dari file `.png`dan `.csv`:
+
+### Membaca Dari LMDB
+
+Selanjutnya, baca gambar dan meta yang sama dari LMDB dengan membuka lingkungan dan memulai transaksi baca:
+
+Berikut beberapa hal yang tidak boleh dilakukan tentang cuplikan kode di atas:
+
+- **Baris 13:** Bendera `readonly=True`menentukan bahwa tidak ada penulisan yang diperbolehkan pada file LMDB sampai transaksi selesai. Dalam istilah basis data, ini setara dengan mengambil kunci baca.
+- **Baris 20:** Untuk mengambil objek CIFAR_Image, Anda perlu membalik langkah yang kita ambil untuk mengambilnya saat kita menulisnya. Di sinilah fungsi `get_image()`objek berguna.
+
+Ini mengakhiri pembacaan kembali gambar dari LMDB. Terakhir, Anda ingin melakukan hal yang sama dengan HDF5.
+
+### Membaca Dari HDF5
+
+Membaca dari HDF5 terlihat sangat mirip dengan proses menulis. Berikut adalah kode untuk membuka dan membaca file HDF5 serta mengurai gambar dan meta yang sama:
+
+Perhatikan bahwa Anda mengakses berbagai kumpulan data dalam file dengan mengindeks `file`objek menggunakan nama kumpulan data yang diawali dengan garis miring `/`. Seperti sebelumnya, Anda dapat membuat kamus yang berisi semua fungsi baca:
+
+Setelah kamus ini disiapkan, Anda siap menjalankan eksperimen.
+
+### Eksperimen untuk Membaca Satu Gambar
+
+Anda mungkin berharap bahwa eksperimen untuk membaca satu gambar akan memberikan hasil yang agak sepele, namun berikut kode eksperimennya:
+
+Berikut hasil percobaan membaca satu gambar:
+
+| metode | Baca Gambar Tunggal + Meta |
+| ------ | -------------------------- |
+| Disk   | 1,61970 mdtk               |
+| LMDB   | 4,52063 mdtk               |
+| HDF5   | 1,98036 mdtk               |
+
+Ini sedikit lebih cepat untuk membaca `.png`dan `.csv`file langsung dari disk, tetapi ketiga metode tersebut bekerja dengan sangat cepat. Eksperimen yang akan kita lakukan selanjutnya jauh lebih menarik.
+
+## Membaca Banyak Gambar
+
+Sekarang Anda dapat menyesuaikan kode untuk membaca banyak gambar sekaligus. Ini mungkin tindakan yang paling sering Anda lakukan, jadi performa runtime sangat penting.
+
+### Menyesuaikan Kode untuk Banyak Gambar
+
+Dengan memperluas fungsi di atas, Anda dapat membuat fungsi dengan `read_many_`, yang dapat digunakan untuk percobaan berikutnya. Seperti sebelumnya, menarik untuk membandingkan kinerja saat membaca jumlah gambar yang berbeda, yang diulangi dalam kode di bawah ini untuk referensi:
+
+Dengan fungsi membaca yang disimpan dalam kamus seperti halnya fungsi menulis, Anda siap untuk bereksperimen.
+
+### Eksperimen Membaca Banyak Gambar
+
+Anda sekarang dapat menjalankan eksperimen untuk membaca banyak gambar:
+
+Seperti yang kami lakukan sebelumnya, Anda dapat membuat grafik hasil eksperimen yang telah dibaca:
+
+[![baca-banyak-gambar](https://files.realpython.com/media/read_many.9c4a6dc5bdc0.png)](https://files.realpython.com/media/read_many.9c4a6dc5bdc0.png)
+
+[![baca-banyak-log](https://files.realpython.com/media/read_many_log.594dac8746ad.png)](https://files.realpython.com/media/read_many_log.594dac8746ad.png)
+
+Grafik atas menunjukkan waktu baca normal dan tidak disesuaikan, menunjukkan perbedaan drastis antara membaca dari `.png`file dan LMDB atau HDF5.
+
+Sebaliknya, grafik di bawah menunjukkan variasi `log`waktu, menyoroti perbedaan relatif dengan gambar yang lebih sedikit. Yaitu, kita dapat melihat bagaimana HDF5 dimulai dari belakang, namun dengan lebih banyak gambar, secara konsisten menjadi lebih cepat dibandingkan LMDB dengan selisih yang kecil.
+
+**Dalam praktiknya, waktu menulis seringkali kurang penting dibandingkan waktu membaca.** Bayangkan Anda sedang melatih jaringan neural dalam pada gambar, dan hanya setengah dari seluruh kumpulan data gambar Anda yang dapat dimasukkan ke dalam RAM sekaligus. Setiap periode pelatihan jaringan memerlukan seluruh kumpulan data, dan model memerlukan beberapa ratus periode untuk menyatu. Anda pada dasarnya akan membaca setengah dari kumpulan data ke dalam memori setiap zaman.
+
+Ada beberapa trik yang dilakukan orang, seperti melatih zaman semu untuk menjadikannya sedikit lebih baik, tetapi Anda mengerti maksudnya.
+
+Sekarang, lihat kembali grafik yang telah dibaca di atas. Perbedaan antara waktu baca 40 detik dan 4 detik secara tiba-tiba adalah perbedaan antara menunggu enam jam hingga model Anda dilatih, atau empat puluh menit!
+
+Jika kita melihat waktu baca dan tulis pada grafik yang sama, kita mendapatkan yang berikut:
+
+[![Baca tulisan](https://files.realpython.com/media/read_write.a4f87d39489d.png)](https://files.realpython.com/media/read_write.a4f87d39489d.png)
+
+Saat Anda menyimpan gambar sebagai `.png`file, ada perbedaan besar antara waktu tulis dan baca. Namun, dengan LMDB dan HDF5, perbedaannya tidak terlalu mencolok. Secara keseluruhan, meskipun waktu baca lebih penting daripada waktu tulis, terdapat argumen kuat untuk menyimpan gambar menggunakan LMDB atau HDF5.
+
+Sekarang setelah Anda melihat manfaat kinerja LMDB dan HDF5, mari kita lihat metrik penting lainnya: penggunaan disk.
+
+## Mempertimbangkan Penggunaan Disk
+
+Kecepatan bukan satu-satunya metrik kinerja yang mungkin Anda minati. Kita sudah menangani kumpulan data yang sangat besar, jadi ruang disk juga merupakan masalah yang sangat valid dan relevan.
+
+Misalkan Anda memiliki kumpulan data gambar sebesar 3 TB. Agaknya, Anda sudah menyimpannya di disk di suatu tempat, tidak seperti contoh CIFAR kami, jadi dengan menggunakan metode penyimpanan alternatif, Anda pada dasarnya membuat salinannya, yang juga harus disimpan. Melakukan hal ini akan memberi Anda manfaat kinerja yang besar saat Anda menggunakan gambar, namun Anda harus memastikan Anda memiliki cukup ruang disk.
+
+**Berapa banyak ruang disk yang digunakan berbagai metode penyimpanan?** Berikut ruang disk yang digunakan setiap metode untuk setiap jumlah gambar:
+
+[![toko-mem-gambar](https://files.realpython.com/media/store_mem.dadff24e67e3.png)](https://files.realpython.com/media/store_mem.dadff24e67e3.png)
+
+Baik HDF5 dan LMDB menggunakan lebih banyak ruang disk dibandingkan jika Anda menyimpan menggunakan `.png`gambar normal. Penting untuk dicatat bahwa penggunaan dan kinerja disk LMDB dan HDF5 **sangat bergantung pada berbagai faktor, termasuk sistem operasi dan, yang lebih penting, ukuran data yang Anda simpan.**
+
+LMDB memperoleh efisiensinya dari caching dan memanfaatkan ukuran halaman OS. Anda tidak perlu memahami cara kerja bagian dalamnya, namun perhatikan bahwa **dengan gambar yang lebih besar, Anda akan mendapatkan penggunaan disk yang jauh lebih banyak dengan LMDB,** karena gambar tidak akan muat di halaman daun LMDB, lokasi penyimpanan reguler di pohon, dan sebaliknya Anda akan memiliki banyak halaman yang meluap. Batang LMDB pada grafik di atas akan keluar dari grafik.
+
+Gambar 32x32x3 piksel kami relatif kecil dibandingkan dengan rata-rata gambar yang mungkin Anda gunakan, dan memungkinkan kinerja LMDB optimal.
+
+Meskipun kami tidak akan menjelajahinya di sini secara eksperimental, menurut pengalaman saya sendiri dengan gambar berukuran 256x256x3 atau 512x512x3 piksel, HDF5 biasanya sedikit lebih efisien dalam hal penggunaan disk daripada LMDB. Ini adalah transisi yang baik ke bagian akhir, diskusi kualitatif tentang perbedaan antara metode-metode tersebut.
+
+Sumber artikel : [Real World Python](https://realpython.com/storing-images-in-python)
