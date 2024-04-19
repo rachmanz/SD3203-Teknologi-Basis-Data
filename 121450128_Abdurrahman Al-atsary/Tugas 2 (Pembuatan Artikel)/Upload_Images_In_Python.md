@@ -4,6 +4,8 @@ Author: Abdurrahman Al-atsary
 Title: Storing Images in Python
 ---
 
+![Overview Images](https://realpython.com/cdn-cgi/image/width=960,format=auto/https://files.realpython.com/media/Three-Ways-of-Storing-and-Accessing-Lots-of-Images-in-Python_Watermarked.e0e46e94536c.jpg)
+
 # 3 Cara untuk Menyimpan dan Mengakses Gambar yang Banyak didalam Python
 
 ## Overview
